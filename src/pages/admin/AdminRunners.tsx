@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../api/supabase';
 import AdminSidebar from '../../components/AdminSidebar';
 import { 
-  Check, X, Eye, MapPin, Wallet, Search, 
+  X, Eye, MapPin, Wallet, Search, 
   Calendar, Phone, ShieldCheck, Clock, AlertCircle
 } from 'lucide-react';
 
@@ -39,37 +39,31 @@ export default function AdminRunners() {
 
     if (data) {
       setRunners(data);
-      // Sum revenue for the verified fleet
       const { data: allVerified } = await supabase.from('runners').select('admin_commission_owed').eq('status', 'verified');
       const revenue = allVerified?.reduce((acc, curr) => acc + (curr.admin_commission_owed || 0), 0) || 0;
       setTotalRevenue(revenue);
     }
   };
 
- const handleAction = async (id: string, newStatus: 'verified' | 'rejected') => {
-  console.log("Attempting to update runner:", id, "to status:", newStatus);
-  
-  const { data, error } = await supabase
-    .from('runners')
-    .update({ status: newStatus })
-    .eq('id', id)
-    .select(); // Adding .select() helps verify if the row actually changed
+  const handleAction = async (id: string, newStatus: 'verified' | 'rejected') => {
+    const { data, error } = await supabase
+      .from('runners')
+      .update({ status: newStatus })
+      .eq('id', id)
+      .select();
 
-  if (error) {
-    console.error("Supabase Error:", error);
-    alert("Update failed: " + error.message);
-  } else if (data && data.length > 0) {
-    // SUCCESS
-    setSelectedRunner(null);
-    setShowRejectModal(false);
-    setRejectReason('');
-    fetchRunners(); 
-    alert(`Runner successfully ${newStatus}!`);
-  } else {
-    // This happens if the policy blocks the update or ID is wrong
-    alert("No changes made. Check if you are logged in as admin@pasabuy.com");
-  }
-};
+    if (error) {
+      alert("Update failed: " + error.message);
+    } else if (data && data.length > 0) {
+      setSelectedRunner(null);
+      setShowRejectModal(false);
+      setRejectReason('');
+      fetchRunners(); 
+      alert(`Runner successfully ${newStatus}!`);
+    } else {
+      alert("No changes made. Check if you are logged in as admin@pasabuy.com");
+    }
+  };
 
   const filteredRunners = runners.filter(r => 
     r.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -81,7 +75,6 @@ export default function AdminRunners() {
       <AdminSidebar />
       <main className="flex-1 p-10 overflow-y-auto">
         
-        {/* HEADER & REVENUE */}
         <header className="mb-12 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div>
             <h1 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">
@@ -98,7 +91,6 @@ export default function AdminRunners() {
           </div>
         </header>
 
-        {/* TABS & SEARCH */}
         <div className="flex flex-col md:flex-row gap-6 mb-8 items-center justify-between">
           <div className="flex bg-slate-200/50 p-1 rounded-2xl w-full md:w-auto">
             {(['pending', 'verified', 'rejected', 'on_duty'] as RunnerTab[]).map((tab) => (
@@ -126,7 +118,6 @@ export default function AdminRunners() {
           </div>
         </div>
 
-        {/* LIST SECTION */}
         <section className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
           <table className="w-full text-left">
             <thead className="bg-slate-50/50 border-b border-slate-100">
@@ -161,8 +152,11 @@ export default function AdminRunners() {
                   </td>
                   <td className="px-8 py-6 font-black text-slate-700 italic">₱{runner.admin_commission_owed?.toFixed(2) || '0.00'}</td>
                   <td className="px-8 py-6 text-right">
+                    {/* FIXED: Added title and aria-label */}
                     <button 
                       onClick={() => setSelectedRunner(runner)}
+                      title="View Runner Details"
+                      aria-label="View Runner Details"
                       className="p-3 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-900 hover:text-white transition-all shadow-sm active:scale-90"
                     >
                       <Eye size={18} />
@@ -181,12 +175,10 @@ export default function AdminRunners() {
           </table>
         </section>
 
-        {/* REVIEW MODAL */}
         {selectedRunner && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/80 backdrop-blur-md animate-in fade-in duration-300">
             <div className="bg-white w-full max-w-5xl rounded-[3.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row h-[85vh] animate-in zoom-in-95 duration-300">
               
-              {/* Document Side */}
               <div className="flex-1 bg-slate-50 p-10 flex flex-col">
                 <div className="flex justify-between items-center mb-8">
                   <h3 className="font-black text-slate-900 uppercase italic tracking-tight">Runner Documentation</h3>
@@ -210,14 +202,19 @@ export default function AdminRunners() {
                 </div>
               </div>
 
-              {/* Info Side */}
               <div className="w-full md:w-[400px] p-12 flex flex-col bg-white">
                 <div className="flex justify-between items-start mb-12">
                   <div>
                     <h2 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">{selectedRunner.full_name}</h2>
                     <p className="text-[#f28e1c] font-black text-[10px] uppercase tracking-widest mt-4">Applicant Profile</p>
                   </div>
-                  <button onClick={() => setSelectedRunner(null)} className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500 transition-colors shadow-sm">
+                  {/* FIXED: Added title and aria-label */}
+                  <button 
+                    onClick={() => setSelectedRunner(null)} 
+                    title="Close Details"
+                    aria-label="Close Details"
+                    className="p-3 bg-slate-50 rounded-full text-slate-400 hover:text-rose-500 transition-colors shadow-sm"
+                  >
                     <X size={20} />
                   </button>
                 </div>
@@ -238,7 +235,6 @@ export default function AdminRunners() {
                   ))}
                 </div>
 
-                {/* Footer Actions */}
                 <div className="mt-12 space-y-4">
                   {activeTab === 'pending' ? (
                     <div className="grid grid-cols-2 gap-4">
@@ -266,7 +262,6 @@ export default function AdminRunners() {
           </div>
         )}
 
-        {/* REJECTION REASON MODAL */}
         {showRejectModal && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-sm animate-in zoom-in-95">
             <div className="bg-white w-full max-w-md rounded-[3rem] p-10 shadow-2xl space-y-8">

@@ -3,7 +3,7 @@ import { supabase } from '../../api/supabase';
 import RunnerDashboard from './RunnerDashboard';
 import { 
   Clock, Camera, ArrowRight, CheckCircle2, 
-  MapPin, Phone, Calendar, User, X 
+  MapPin, Phone, Calendar 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -39,7 +39,6 @@ export default function RunnerMain() {
     const formData = new FormData(e.currentTarget);
 
     try {
-      // 1. Upload ID Image to Secure Folder Path
       const fileExt = selectedFile.name.split('.').pop();
       const filePath = `${user.id}/${Date.now()}.${fileExt}`;
 
@@ -49,7 +48,6 @@ export default function RunnerMain() {
 
       if (uploadError) throw uploadError;
 
-      // 2. Insert Application Data
       const { error: insertError } = await supabase.from('runners').insert([{ 
         id: user.id, 
         full_name: user.user_metadata.full_name,
@@ -71,8 +69,6 @@ export default function RunnerMain() {
     }
   };
 
-  // --- RENDERING LOGIC ---
-
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
@@ -84,10 +80,8 @@ export default function RunnerMain() {
     );
   }
 
-  // IF VERIFIED: Show the real dashboard
   if (status === 'verified') return <RunnerDashboard user={user} />;
 
-  // IF PENDING: Show waiting screen
   if (status === 'pending') {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 text-center bg-[#f8fafc]">
@@ -114,7 +108,6 @@ export default function RunnerMain() {
     );
   }
 
-  // IF NONE: Show Application Form
   return (
     <div className="min-h-screen bg-[#f8fafc] p-6 flex flex-col items-center justify-center">
       <form 
@@ -132,28 +125,38 @@ export default function RunnerMain() {
         <div className="space-y-5">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase text-slate-400 ml-4 italic flex items-center gap-2"><Calendar size={10}/> Birthday</label>
-              <input required name="birthday" type="date" className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-[1.5rem] focus:border-[#f28e1c] focus:bg-white outline-none font-bold text-slate-700 transition-all" />
+              <label htmlFor="birthday" className="text-[9px] font-black uppercase text-slate-400 ml-4 italic flex items-center gap-2">
+                <Calendar size={10}/> Birthday
+              </label>
+              <input required id="birthday" name="birthday" type="date" className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-[1.5rem] focus:border-[#f28e1c] focus:bg-white outline-none font-bold text-slate-700 transition-all" />
             </div>
             <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase text-slate-400 ml-4 italic flex items-center gap-2"><Phone size={10}/> Phone Number</label>
-              <input required name="phone" type="tel" placeholder="09..." className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-[1.5rem] focus:border-[#f28e1c] focus:bg-white outline-none font-bold text-slate-700 transition-all" />
+              <label htmlFor="phone" className="text-[9px] font-black uppercase text-slate-400 ml-4 italic flex items-center gap-2">
+                <Phone size={10}/> Phone Number
+              </label>
+              <input required id="phone" name="phone" type="tel" placeholder="09..." className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-[1.5rem] focus:border-[#f28e1c] focus:bg-white outline-none font-bold text-slate-700 transition-all" />
             </div>
           </div>
           
           <div className="space-y-1">
-              <label className="text-[9px] font-black uppercase text-slate-400 ml-4 italic flex items-center gap-2"><MapPin size={10}/> Current Address</label>
-              <input required name="address" type="text" placeholder="Street, Brgy, Borongan City" className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-[1.5rem] focus:border-[#f28e1c] focus:bg-white outline-none font-bold text-slate-700 transition-all" />
+              <label htmlFor="address" className="text-[9px] font-black uppercase text-slate-400 ml-4 italic flex items-center gap-2">
+                <MapPin size={10}/> Current Address
+              </label>
+              <input required id="address" name="address" type="text" placeholder="Street, Brgy, Borongan City" className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-[1.5rem] focus:border-[#f28e1c] focus:bg-white outline-none font-bold text-slate-700 transition-all" />
           </div>
 
           <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept="image/*" 
-            onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} 
-          />
+  type="file" 
+  id="id_upload"
+  ref={fileInputRef} 
+  className="hidden" 
+  accept="image/*" 
+  title="Upload ID Document"
+  aria-label="Upload Valid ID Image"
+  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} 
+/>
 
+          {/* FIX: Removed role="button" and tabIndex from container to avoid nested interactive elements */}
           <div 
             onClick={() => fileInputRef.current?.click()} 
             className={`p-10 rounded-[2rem] border-4 border-dashed flex flex-col items-center gap-4 cursor-pointer transition-all ${
@@ -167,7 +170,13 @@ export default function RunnerMain() {
                   <CheckCircle2 size={40} />
                   <div className="text-center">
                     <p className="text-xs font-black uppercase truncate max-w-[200px]">{selectedFile.name}</p>
-                    <button type="button" onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }} className="text-[10px] font-black underline text-slate-400 mt-1 uppercase hover:text-rose-500">Change File</button>
+                    <button 
+                      type="button" 
+                      onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }} 
+                      className="text-[10px] font-black underline text-slate-400 mt-1 uppercase hover:text-rose-500"
+                    >
+                      Change File
+                    </button>
                   </div>
                 </div>
               ) : (
