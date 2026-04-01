@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  background-color: #f8fafc; 
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+}
+
+
+@layer utilities {
+  
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  
+  .no-scrollbar {
+    -ms-overflow-style: none;  
+      
+  }
+}
+
+
+button, a {
+  transition: all 0.2s ease-in-out;
+}
+
+.animate-in {
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
