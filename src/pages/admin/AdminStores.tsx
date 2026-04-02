@@ -3,12 +3,15 @@ import { supabase } from '../../api/supabase';
 import AdminSidebar from '../../components/AdminSidebar';
 import { 
   Store, CheckCircle, XCircle, Eye, 
-  ExternalLink, Calendar
-} from 'lucide-react'; // Removed Search and Filter
+  ExternalLink, Calendar, RefreshCw
+} from 'lucide-react';
+
+// Added 'suspended' to the valid tab types
+type StoreStatus = 'pending' | 'active' | 'suspended';
 
 export default function AdminStores() {
   const [stores, setStores] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<'pending' | 'active'>('pending');
+  const [activeTab, setActiveTab] = useState<StoreStatus>('pending');
   const [loading, setLoading] = useState(true);
   const [selectedPermit, setSelectedPermit] = useState<string | null>(null);
 
@@ -24,18 +27,22 @@ export default function AdminStores() {
       .eq('status', activeTab)
       .order('created_at', { ascending: false });
 
-    if (!error) setStores(data);
+    if (!error) setStores(data || []);
     setLoading(false);
   };
 
-  const handleUpdateStatus = async (id: string, newStatus: 'active' | 'suspended') => {
+  const handleUpdateStatus = async (id: string, newStatus: StoreStatus) => {
     const { error } = await supabase
       .from('stores')
       .update({ status: newStatus })
       .eq('id', id);
 
-    if (error) alert("Action failed: " + error.message);
-    else fetchStores();
+    if (error) {
+      alert("Action failed: " + error.message);
+    } else {
+      // Refresh the list so the store moves to the correct tab
+      fetchStores();
+    }
   };
 
   const getPermitUrl = (path: string) => {
@@ -58,18 +65,25 @@ export default function AdminStores() {
             </p>
           </div>
 
+          {/* UPDATED TABS: Added Suspended Tab */}
           <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100">
             <button 
               onClick={() => setActiveTab('pending')}
               className={`px-6 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${activeTab === 'pending' ? 'bg-orange-500 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
             >
-              Pending ({stores.length})
+              Pending ({activeTab === 'pending' ? stores.length : '...'})
             </button>
             <button 
               onClick={() => setActiveTab('active')}
               className={`px-6 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${activeTab === 'active' ? 'bg-[#57b894] text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
             >
-              Active Stores
+              Active
+            </button>
+            <button 
+              onClick={() => setActiveTab('suspended')}
+              className={`px-6 py-3 text-[10px] font-black uppercase rounded-xl transition-all ${activeTab === 'suspended' ? 'bg-rose-500 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+            >
+              Suspended
             </button>
           </div>
         </header>
@@ -111,6 +125,8 @@ export default function AdminStores() {
                     <td className="px-10 py-6">
                       <button 
                         onClick={() => setSelectedPermit(getPermitUrl(store.business_permit_url))}
+                        title="View Business Permit"
+                        aria-label="View Business Permit"
                         className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-xl text-[10px] font-black uppercase text-slate-500 hover:bg-[#57b894] hover:text-white transition-all shadow-sm"
                       >
                         <Eye size={14} /> View Permit
@@ -126,7 +142,7 @@ export default function AdminStores() {
 
                     <td className="px-10 py-6 text-right">
                       <div className="flex justify-end gap-2">
-                        {activeTab === 'pending' ? (
+                        {activeTab === 'pending' && (
                           <>
                             <button 
                               onClick={() => handleUpdateStatus(store.id, 'active')}
@@ -143,12 +159,23 @@ export default function AdminStores() {
                               <XCircle size={18} />
                             </button>
                           </>
-                        ) : (
+                        )}
+
+                        {activeTab === 'active' && (
                           <button 
                             onClick={() => handleUpdateStatus(store.id, 'suspended')}
                             className="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-[10px] font-black uppercase hover:bg-rose-500 hover:text-white transition-all"
                           >
-                            Suspend
+                            Suspend Store
+                          </button>
+                        )}
+
+                        {activeTab === 'suspended' && (
+                          <button 
+                            onClick={() => handleUpdateStatus(store.id, 'active')}
+                            className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase hover:bg-emerald-500 hover:text-white transition-all flex items-center gap-2"
+                          >
+                            <RefreshCw size={12} /> Re-activate
                           </button>
                         )}
                       </div>
@@ -158,7 +185,7 @@ export default function AdminStores() {
                   <tr>
                     <td colSpan={5} className="py-24 text-center">
                        <Store className="mx-auto text-slate-100 mb-4" size={64} />
-                       <p className="text-slate-300 italic font-black uppercase tracking-widest text-xs">No stores found in this category</p>
+                       <p className="text-slate-300 italic font-black uppercase tracking-widest text-xs">No stores in {activeTab} list</p>
                     </td>
                   </tr>
                 )}
@@ -172,7 +199,6 @@ export default function AdminStores() {
       {selectedPermit && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/90 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative max-w-4xl w-full h-full flex flex-col items-center justify-center">
-            {/* FIXED: Added aria-label and title here */}
             <button 
               onClick={() => setSelectedPermit(null)}
               aria-label="Close Preview"
