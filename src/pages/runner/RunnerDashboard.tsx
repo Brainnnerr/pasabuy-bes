@@ -69,11 +69,29 @@ export default function RunnerDashboard({ user }: { user: any }) {
     setIsUpdating(false);
   };
 
+  // --- UPDATED STATUS LOGIC ---
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
     setIsUpdating(true);
-    const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
-    if (error) alert(error.message);
-    else fetchRunnerOrders();
+    
+    // Prepare the update payload
+    const updateData: any = { status: newStatus };
+    
+    // NEW: If the runner is completing the delivery, add the timestamp
+    if (newStatus === 'delivered') {
+      updateData.delivered_at = new Date().toISOString();
+    }
+
+    const { error } = await supabase
+      .from('orders')
+      .update(updateData)
+      .eq('id', orderId);
+
+    if (error) {
+      alert("Update failed: " + error.message);
+    } else {
+      if (newStatus === 'delivered') alert("Order delivered! Revenue updated for store. ✨");
+      fetchRunnerOrders();
+    }
     setIsUpdating(false);
   };
 
